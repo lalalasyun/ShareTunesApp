@@ -1,10 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
 // 開発環境では明示的にベースURLを設定
-// Next.jsのリライト機能を使う代わりに直接バックエンドURLを指定
-const API_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://127.0.0.1:8000/api' // IPv4アドレスを指定
-  : '/api';
+// Docker環境ではサービス名を使用
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000/api';
 
 // デバッグ情報を出力
 console.log('API_URL設定:', API_URL);
@@ -110,7 +108,11 @@ export const authService = {
   getSpotifyAuthUrl: async () => {
     try {
       console.log('Spotify認証URLを取得しています...');
-      const response = await apiClient.get('/auth/spotify/login/');
+      // デバッグ情報を追加
+      console.log('リクエストURL:', `${API_URL}/auth/spotify/login/`);
+      
+      // ベースURLが既にAPIサーバーのアドレスを含むため、パスの冒頭に/を付けない
+      const response = await apiClient.get('auth/spotify/login/');
       console.log('Spotify認証URLの取得に成功しました:', response.data);
       return response.data;
     } catch (error) {
@@ -132,12 +134,12 @@ export const authService = {
   },
   
   getUserProfile: async () => {
-    const response = await apiClient.get('/auth/profile/');
+    const response = await apiClient.get('auth/profile/');
     return response.data;
   },
   
   refreshSpotifyToken: async () => {
-    const response = await apiClient.get('/auth/spotify/refresh-token/');
+    const response = await apiClient.get('auth/spotify/refresh-token/');
     return response.data;
   }
 };

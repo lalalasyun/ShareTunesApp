@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import axios from 'axios';
 
-export default function AuthCallback() {
+// 実際のコールバック処理を行うコンポーネント
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -84,5 +84,26 @@ export default function AuthCallback() {
         <p className="text-gray-600 mt-2">ログイン後、ダッシュボードにリダイレクトします。</p>
       </div>
     </div>
+  );
+}
+
+// ローディング状態を表示するコンポーネント
+function Loading() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-spotify-green border-solid mb-4"></div>
+        <h2 className="text-xl font-semibold">読み込み中...</h2>
+      </div>
+    </div>
+  );
+}
+
+// メインのコールバックページコンポーネント
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }

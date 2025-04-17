@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./ShareTunes/backend/
+      dockerfile: Dockerfile
+    volumes:
+      - ./ShareTunes/backend:/app
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./ShareTunes/backend/.env
+    environment:
+      - DATABASE_URL=sqlite:///db.sqlite3
+    restart: unless-stopped
+    networks:
+      - sharetunes-network
+
+  frontend:
+    build:
+      context: ./ShareTunes/frontend/
+      dockerfile: Dockerfile
+    volumes:
+      - ./ShareTunes/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - DEBUG=True
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - sharetunes-network
+
+networks:
+  sharetunes-network:
+    driver: bridge
+
+volumes:
+  static_volume:
