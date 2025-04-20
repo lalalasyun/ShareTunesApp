@@ -6,6 +6,15 @@ from django.utils import timezone
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
+# Gemini APIは必須ではなく、設定されている場合のみ使用するようにする
+GEMINI_AVAILABLE = False
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    # Google Generative AIがインストールされていない場合は、サイレントに失敗する
+    pass
+
 from users.models import UserProfile
 
 class RecommendationService:
@@ -125,8 +134,9 @@ class RecommendationService:
         
     def call_deepseek_api(self, prompt):
         """DeepSeek LLM APIを呼び出し"""
-        api_key = settings.LLM_API_KEY
-        api_url = settings.LLM_API_URL
+        api_key = settings.DEEPSEEK_API_KEY
+        api_url = settings.DEEPSEEK_API_URL
+        model = settings.DEEPSEEK_MODEL
         
         if not api_key or not api_url:
             raise ValueError("DeepSeek API設定が不正です")
@@ -137,7 +147,7 @@ class RecommendationService:
         }
         
         data = {
-            "model": "deepseek-chat",
+            "model": model,
             "messages": [
                 {
                     "role": "system",
@@ -190,6 +200,50 @@ class RecommendationService:
         response.raise_for_status()
         return response.json()
         
+    def call_gemini_api(self, prompt):
+        """Gemini APIを呼び出し"""
+        if not GEMINI_AVAILABLE:
+            raise ValueError("Gemini APIが利用できません")
+        
+        api_key = settings.GEMINI_API_KEY
+        model = settings.GEMINI_MODEL
+        
+        if not api_key:
+            raise ValueError("Gemini API設定が不正です")
+            
+        # API設定を初期化
+        genai.configure(api_key=api_key)
+        
+        # モデル設定
+        model = genai.GenerativeModel(model)
+        
+        try:
+            # システムメッセージとユーザーメッセージを設定
+            chat = model.start_chat(history=[])
+            system_message = "あなたは音楽の専門家として、ユーザーの好みに合った音楽を推薦します。"
+            messages = [
+                {"role": "system", "parts": [system_message]},
+                {"role": "user", "parts": [prompt]}
+            ]
+            
+            # 会話形式でプロンプトを送信
+            response = chat.send_message(f"{system_message}\n\n{prompt}")
+            
+            # レスポンス形式をOpenAI/Deepseek形式に合わせる
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": response.text,
+                            "role": "assistant"
+                        }
+                    }
+                ]
+            }
+        except Exception as e:
+            print(f"Gemini API error: {str(e)}")
+            raise
+        
     def call_llm_api(self, prompt):
         """LLM APIを呼び出し、推薦結果を取得"""
         # LLMプロバイダーの優先順位に基づいて試行
@@ -201,6 +255,8 @@ class RecommendationService:
                     return self.call_deepseek_api(prompt)
                 elif provider == 'openai':
                     return self.call_openai_api(prompt)
+                elif provider == 'gemini':
+                    return self.call_gemini_api(prompt)
             except Exception as e:
                 error_msg = f"{provider} API呼び出しエラー: {str(e)}"
                 print(error_msg)
