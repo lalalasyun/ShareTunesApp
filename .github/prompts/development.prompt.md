@@ -5,6 +5,12 @@
 - Push changes to remote environment before merging
 - Create branches with descriptive names related to the feature/fix
 
+## Repository Information
+- Remote repository: https://github.com/lalalasyun/ShareTunesApp
+- Main branch: main
+- Clone with: `git clone https://github.com/lalalasyun/ShareTunesApp.git`
+- Always create pull requests to the main branch for code reviews
+
 ## Commit Messages
 - Follow Conventional Commits format
 - Write commit messages in English
