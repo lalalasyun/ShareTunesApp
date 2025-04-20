@@ -7,6 +7,7 @@
 - Open pull requests early for discussion
 - Push changes to remote environment before merging
 - Create branches with descriptive names related to the feature/fix
+- Delete feature branches after merging to main
 
 ## Repository Information
 - Remote repository: https://github.com/lalalasyun/ShareTunesApp
