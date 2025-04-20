@@ -6,14 +6,7 @@ from django.utils import timezone
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
-# Gemini APIは必須ではなく、設定されている場合のみ使用するようにする
-GEMINI_AVAILABLE = False
-try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
-except ImportError:
-    # Google Generative AIがインストールされていない場合は、サイレントに失敗する
-    pass
+import google.generativeai as genai
 
 from users.models import UserProfile
 
@@ -50,13 +43,57 @@ class RecommendationService:
         
         try:
             # 最近再生した20曲を取得
-            recent_tracks = sp.current_user_recently_played(limit=20)
-            
+            recent_tracks_raw = sp.current_user_recently_played(limit=20)
             # トップアーティスト10組を取得
-            top_artists = sp.current_user_top_artists(limit=10, time_range='medium_term')
-            
+            top_artists_raw = sp.current_user_top_artists(limit=10, time_range='medium_term')
             # トップトラック10曲を取得
-            top_tracks = sp.current_user_top_tracks(limit=10, time_range='medium_term')
+            top_tracks_raw = sp.current_user_top_tracks(limit=10, time_range='medium_term')
+
+            # 必要なデータのみ抽出して軽量化
+            recent_tracks = {
+                'items': [
+                    {
+                        'track': {
+                            'id': item['track']['id'],
+                            'name': item['track']['name'],
+                            'artists': [{'id': artist['id'], 'name': artist['name']} for artist in item['track']['artists']],
+                            'album': {
+                                'id': item['track']['album']['id'],
+                                'name': item['track']['album']['name'],
+                                'images': item['track']['album']['images'][:1]  # 一番大きい画像のみ保存
+                            }
+                        },
+                        'played_at': item['played_at']
+                    } for item in recent_tracks_raw['items'][:10]  # 最新10曲に制限
+                ]
+            }
+            
+            top_artists = {
+                'items': [
+                    {
+                        'id': artist['id'],
+                        'name': artist['name'],
+                        'genres': artist['genres'][:3],  # 代表的なジャンルのみ
+                        'images': artist['images'][:1] if 'images' in artist and artist['images'] else [],
+                        'popularity': artist.get('popularity', 0)
+                    } for artist in top_artists_raw['items']
+                ]
+            }
+            
+            top_tracks = {
+                'items': [
+                    {
+                        'id': track['id'],
+                        'name': track['name'],
+                        'artists': [{'id': artist['id'], 'name': artist['name']} for artist in track['artists']],
+                        'album': {
+                            'id': track['album']['id'],
+                            'name': track['album']['name'],
+                            'images': track['album']['images'][:1] if 'images' in track['album'] else []
+                        }
+                    } for track in top_tracks_raw['items']
+                ]
+            }
             
             return {
                 'recent_tracks': recent_tracks,
@@ -202,9 +239,6 @@ class RecommendationService:
         
     def call_gemini_api(self, prompt):
         """Gemini APIを呼び出し"""
-        if not GEMINI_AVAILABLE:
-            raise ValueError("Gemini APIが利用できません")
-        
         api_key = settings.GEMINI_API_KEY
         model = settings.GEMINI_MODEL
         
@@ -334,6 +368,9 @@ class RecommendationService:
         
         # レスポンスパース
         parsed_data = self.parse_llm_response(llm_response)
+
+        if 'recommendations' not in parsed_data:
+            raise ValueError("推薦データが含まれていません")
         
         # 楽曲データを充実
         enriched_tracks = self.enrich_track_data(parsed_data['recommendations'])
