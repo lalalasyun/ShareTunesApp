@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['i.scdn.co', 'mosaic.scdn.co', 'image-cdn-fa.spotifycdn.com', 'i.pravatar.cc'],
+    domains: ['i.scdn.co', 'mosaic.scdn.co', 'image-cdn-fa.spotifycdn.com', 'i.pravatar.cc', '127.0.0.1', 'localhost', 'backend'],
   },
   async rewrites() {
     return [

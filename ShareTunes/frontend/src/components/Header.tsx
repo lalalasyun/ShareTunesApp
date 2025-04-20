@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface HeaderProps {
   userProfile: any;
@@ -33,11 +32,9 @@ export default function Header({ userProfile }: HeaderProps) {
           >
             {userProfile?.profile_image ? (
               <div className="w-8 h-8 rounded-full overflow-hidden">
-                <Image 
+                <img 
                   src={userProfile.profile_image} 
                   alt={`${userProfile.user?.first_name || userProfile.user?.username}'s profile`}
-                  width={32}
-                  height={32}
                   className="object-cover w-full h-full"
                 />
               </div>

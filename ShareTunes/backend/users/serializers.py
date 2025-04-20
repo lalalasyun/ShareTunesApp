@@ -14,5 +14,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserProfile
-        fields = ('id', 'user', 'spotify_id', 'profile_image', 'external_profile_image_url', 'bio', 'favorite_genres', 'created_at', 'updated_at')
+        fields = ('id', 'user', 'spotify_id', 'profile_image', 'external_profile_image_url', 
+                 'bio', 'display_name', 'favorite_genres', 'preferences', 'created_at', 'updated_at')
         read_only_fields = ('spotify_access_token', 'spotify_refresh_token', 'spotify_token_expires_at')
