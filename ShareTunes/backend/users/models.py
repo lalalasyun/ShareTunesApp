@@ -10,7 +10,9 @@ class UserProfile(models.Model):
     profile_image = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     external_profile_image_url = models.URLField(max_length=500, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
+    display_name = models.CharField(max_length=255, blank=True, null=True)  # 表示名フィールドを追加
     favorite_genres = models.JSONField(blank=True, null=True, default=list)
+    preferences = models.JSONField(blank=True, null=True, default=dict)  # ユーザー設定用JSONフィールド
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

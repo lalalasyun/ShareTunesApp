@@ -26,8 +26,11 @@ services:
       - /app/.next
     ports:
       - "3000:3000"
+    env_file:
+      - ./ShareTunes/frontend/.env.local
     environment:
       - DEBUG=True
+      - NEXT_PUBLIC_NODE_ENV=development
     depends_on:
       - backend
     restart: unless-stopped

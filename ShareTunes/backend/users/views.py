@@ -11,10 +11,11 @@ from django.http import JsonResponse
 from django.utils import timezone
 
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import UserProfile
 from .serializers import UserProfileSerializer
@@ -199,38 +200,102 @@ def spotify_callback(request):
         error_url = f"{frontend_url}/?error=認証処理中にエラーが発生しました"
         return redirect(error_url)
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
-def get_user_profile(request):
-    """ユーザープロフィール取得"""
-    print('===== ユーザープロファイル取得リクエスト =====')
+def user_profile(request):
+    """ユーザープロフィール取得・更新（GET/PUT両対応）"""
+    print(f'===== ユーザープロファイル {request.method} リクエスト =====')
     print(f'認証ヘッダー: {request.headers.get("Authorization", "なし")}')
     print(f'ユーザー情報: {request.user}')
     
-    try:
-        profile = UserProfile.objects.get(user=request.user)
-        serializer = UserProfileSerializer(profile)
-        data = serializer.data
-        
-        # プロフィール画像の処理
-        # 1. ローカルにアップロードされた画像があればその完全なURLを構築
-        if profile.profile_image:
-            request_base = f"{request.scheme}://{request.get_host()}"
-            data['profile_image'] = request_base + profile.profile_image.url
+    if request.method == 'GET':
+        # GETリクエスト：プロフィール情報取得
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+            serializer = UserProfileSerializer(profile)
+            data = serializer.data
             
-        # 2. Spotifyの外部プロフィール画像URLがあれば、それをAPIレスポンスのprofile_imageフィールドにセット
-        if profile.external_profile_image_url:
-            # 外部URLがある場合は、それを優先してprofile_imageフィールドに設定
-            data['profile_image'] = profile.external_profile_image_url
+            # プロフィール画像の処理
+            if profile.profile_image:
+                request_base = f"{request.scheme}://{request.get_host()}"
+                data['profile_image'] = request_base + profile.profile_image.url
+                
+            if profile.external_profile_image_url:
+                data['profile_image'] = profile.external_profile_image_url
+            
+            print('プロファイル取得成功')
+            return Response(data)
+        except UserProfile.DoesNotExist:
+            print('プロファイルが見つかりません')
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f'予期せぬエラー: {str(e)}')
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    elif request.method == 'PUT':
+        # PUTリクエスト：プロフィール情報更新
+        print(f'リクエストデータ: {request.data}')
         
-        print('プロファイル取得成功')
-        return Response(data)
-    except UserProfile.DoesNotExist:
-        print('プロファイルが見つかりません')
-        return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        print(f'予期せぬエラー: {str(e)}')
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            # ユーザープロフィールの取得
+            profile = UserProfile.objects.get(user=request.user)
+            user = request.user
+            
+            # リクエストデータから更新情報を取得
+            username = request.data.get('username')
+            email = request.data.get('email')
+            bio = request.data.get('bio')
+            display_name = request.data.get('display_name')  # 表示名を追加
+            
+            # ユーザー名の更新（変更がある場合のみ）
+            if username and username != user.username:
+                # 既存のユーザー名と重複していないか確認
+                if User.objects.filter(username=username).exclude(id=user.id).exists():
+                    return Response({"error": "ユーザー名は既に使用されています"}, status=status.HTTP_400_BAD_REQUEST)
+                user.username = username
+            
+            # メールアドレスの更新（変更がある場合のみ）
+            if email and email != user.email:
+                # 既存のメールアドレスと重複していないか確認
+                if User.objects.filter(email=email).exclude(id=user.id).exists():
+                    return Response({"error": "このメールアドレスは既に使用されています"}, status=status.HTTP_400_BAD_REQUEST)
+                user.email = email
+                
+            # ユーザー情報を保存
+            user.save()
+            
+            # プロフィール情報の更新
+            if bio is not None:  # 空文字列も許可するためにNoneチェック
+                profile.bio = bio
+                
+            # 表示名の更新
+            if display_name is not None:
+                profile.display_name = display_name
+                
+            # プロフィール情報を保存
+            profile.save()
+            
+            # 更新後のプロフィール情報を取得
+            serializer = UserProfileSerializer(profile)
+            data = serializer.data
+            
+            # プロフィール画像のURL処理
+            if profile.profile_image:
+                request_base = f"{request.scheme}://{request.get_host()}"
+                data['profile_image'] = request_base + profile.profile_image.url
+                
+            if profile.external_profile_image_url:
+                data['profile_image'] = profile.external_profile_image_url
+                
+            print('プロフィール更新成功')
+            return Response(data)
+        
+        except UserProfile.DoesNotExist:
+            print('プロフィールが見つかりません')
+            return Response({"error": "プロフィールが見つかりません"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f'予期せぬエラー: {str(e)}')
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -282,3 +347,102 @@ def refresh_spotify_token(request):
         
     except UserProfile.DoesNotExist:
         return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def profile_settings(request):
+    """プロフィール設定の取得・更新（GET/PUT両対応）"""
+    print(f'===== プロフィール設定 {request.method} リクエスト =====')
+    
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+        
+        if request.method == 'GET':
+            # 設定情報の取得
+            settings_data = {
+                'preferences': profile.preferences or {}
+            }
+            print('設定取得成功')
+            return Response(settings_data)
+            
+        elif request.method == 'PUT':
+            # 設定情報の更新
+            print(f'リクエストデータ: {request.data}')
+            
+            if 'preferences' in request.data:
+                # 既存設定がない場合は初期化
+                if not profile.preferences:
+                    profile.preferences = {}
+                
+                # 受け取った設定を更新（全置換ではなく一部更新）
+                new_preferences = request.data.get('preferences', {})
+                if isinstance(profile.preferences, dict) and isinstance(new_preferences, dict):
+                    profile.preferences.update(new_preferences)
+                    profile.save()
+                else:
+                    return Response({"error": "プリファレンスが正しい形式ではありません"}, 
+                                   status=status.HTTP_400_BAD_REQUEST)
+            
+            print('設定更新成功')
+            return Response({
+                'preferences': profile.preferences
+            })
+            
+    except UserProfile.DoesNotExist:
+        print('プロフィールが見つかりません')
+        return Response({"error": "プロフィールが見つかりません"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f'予期せぬエラー: {str(e)}')
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def upload_profile_picture(request):
+    """プロフィール画像のアップロード処理"""
+    print(f'===== プロフィール画像アップロード リクエスト =====')
+    print(f'認証ヘッダー: {request.headers.get("Authorization", "なし")}')
+    
+    try:
+        # ユーザープロフィールを取得
+        profile = UserProfile.objects.get(user=request.user)
+        
+        # リクエストからプロフィール画像を取得
+        if 'image' in request.FILES:
+            # 古い画像が存在する場合は削除
+            if profile.profile_image:
+                # ファイルパスを取得
+                old_image_path = profile.profile_image.path
+                # ファイルが存在する場合は削除
+                if os.path.isfile(old_image_path):
+                    os.remove(old_image_path)
+            
+            # 新しい画像を設定
+            profile.profile_image = request.FILES['image']
+            # 外部URL画像を無効化
+            profile.external_profile_image_url = None
+            profile.save()
+            
+            # 更新されたプロフィール情報を取得
+            serializer = UserProfileSerializer(profile)
+            data = serializer.data
+            
+            # 画像URLを適切に設定
+            # フロントエンドとの互換性のため、相対パスを返す
+            if profile.profile_image:
+                # 相対パスを使用
+                data['profile_image'] = profile.profile_image.url
+                print(f"画像相対パス: {profile.profile_image.url}")
+            
+            print('プロフィール画像アップロード成功')
+            return Response(data)
+            
+        else:
+            return Response({"error": "画像ファイルが提供されていません"}, status=status.HTTP_400_BAD_REQUEST)
+            
+    except UserProfile.DoesNotExist:
+        print('プロフィールが見つかりません')
+        return Response({"error": "プロフィールが見つかりません"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f'予期せぬエラー: {str(e)}')
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

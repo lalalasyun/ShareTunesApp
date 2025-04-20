@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['i.scdn.co', 'mosaic.scdn.co', 'image-cdn-fa.spotifycdn.com', 'i.pravatar.cc'],
+    domains: ['i.scdn.co', 'mosaic.scdn.co', 'image-cdn-fa.spotifycdn.com', 'i.pravatar.cc', '127.0.0.1', 'localhost', 'backend'],
   },
   async rewrites() {
     return [
@@ -12,6 +12,16 @@ const nextConfig = {
         destination: 'http://127.0.0.1:8000/api/:path*',
       },
     ];
+  },
+  // Dockerでのホットリロードを改善するための設定
+  webpackDevMiddleware: (config) => {
+    // Windows+Docker環境でのファイル監視を向上させるための設定
+    config.watchOptions = {
+      poll: 1000, // ポーリング間隔を1秒に設定
+      aggregateTimeout: 300, // 変更を集約する時間
+      ignored: /node_modules/,
+    };
+    return config;
   },
 };
 

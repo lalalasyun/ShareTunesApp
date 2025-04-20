@@ -11,7 +11,15 @@ interface UserProfile {
   email: string;
   profilePicture: string;
   bio: string;
+  display_name: string; // 表示名を追加
   favoriteGenres: string[];
+  preferences: {
+    theme?: string;
+    notification_settings?: {
+      email_notifications?: boolean;
+      push_notifications?: boolean;
+    }
+  };
 }
 
 export default function ProfilePage() {
@@ -20,7 +28,15 @@ export default function ProfilePage() {
     email: '',
     profilePicture: '/default-avatar.png',
     bio: '',
+    display_name: '', // 表示名の初期値
     favoriteGenres: [],
+    preferences: {
+      theme: 'light',
+      notification_settings: {
+        email_notifications: true,
+        push_notifications: true
+      }
+    }
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,18 +54,38 @@ export default function ProfilePage() {
         }
 
         try {
-          // authServiceを使用して一貫したユーザープロフィール情報を取得
-          const userProfileData = await authService.getUserProfile();
+          // userServiceを使用してユーザープロフィール情報を取得
+          const userProfileData = await userService.getProfile();
           
           // APIレスポンスの形式に合わせてマッピング
           const profile = userProfileData.user || {};
           
+          // プロフィール画像のURLを適切に処理
+          let profileImageUrl = '/default-avatar.png';
+          if (userProfileData.profile_image) {
+            // 完全なURLかどうかをチェック
+            if (userProfileData.profile_image.startsWith('http')) {
+              profileImageUrl = userProfileData.profile_image;
+            } else {
+              // 相対パスの場合はそのまま使用
+              profileImageUrl = userProfileData.profile_image;
+            }
+          }
+          
           setUser({
             username: profile.username || '',
             email: profile.email || '',
-            profilePicture: userProfileData.profile_image || '/default-avatar.png',
+            profilePicture: profileImageUrl,
             bio: userProfileData.bio || '',
+            display_name: userProfileData.display_name || '',
             favoriteGenres: userProfileData.favorite_genres || [],
+            preferences: userProfileData.preferences || {
+              theme: 'light',
+              notification_settings: {
+                email_notifications: true,
+                push_notifications: true
+              }
+            }
           });
           
           console.log('プロフィールデータ取得成功:', userProfileData);
@@ -91,6 +127,8 @@ export default function ProfilePage() {
         username: user.username,
         email: user.email,
         bio: user.bio,
+        display_name: user.display_name, // 表示名を更新
+        preferences: user.preferences // プリファレンスを更新
       });
       
       setIsEditing(false);
@@ -113,7 +151,7 @@ export default function ProfilePage() {
         
         // FormDataオブジェクトを作成
         const formData = new FormData();
-        formData.append('profile_picture', file);
+        formData.append('image', file); // フィールド名をバックエンドの期待する'image'に変更
         
         // APIを使って画像をアップロード
         const response = await userService.updateProfilePicture(formData);
@@ -121,7 +159,7 @@ export default function ProfilePage() {
         // アップロードに成功したら状態を更新
         setUser((prev) => ({
           ...prev,
-          profilePicture: response.profile_picture || prev.profilePicture,
+          profilePicture: response.profile_image || prev.profilePicture,
         }));
         
         setLoading(false);
@@ -153,11 +191,11 @@ export default function ProfilePage() {
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="relative w-32 h-32 rounded-full overflow-hidden">
             {user.profilePicture && user.profilePicture !== '/default-avatar.png' ? (
-              <Image
+              // next/image の代わりに標準のimg要素を使用してサーバーエラーを回避
+              <img
                 src={user.profilePicture}
                 alt={`${user.username}のプロフィール画像`}
-                fill
-                className="object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-32 h-32 rounded-full bg-spotify-green flex items-center justify-center text-white text-5xl">
@@ -222,6 +260,16 @@ export default function ProfilePage() {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">表示名</label>
+                  <input
+                    type="text"
+                    name="display_name"
+                    value={user.display_name}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
                 <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => setIsEditing(false)}
@@ -250,6 +298,10 @@ export default function ProfilePage() {
                 <div>
                   <h2 className="text-lg font-semibold">自己紹介</h2>
                   <p>{user.bio}</p>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">表示名</h2>
+                  <p>{user.display_name}</p>
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold">好きなジャンル</h2>

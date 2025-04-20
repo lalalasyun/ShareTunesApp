@@ -1,14 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { authService } from '../services/api';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // ページ読み込み時に認証状態をチェック
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('accessToken');
+      setIsAuthenticated(!!token);
+      
+      // 認証済みの場合は5秒後にダッシュボードに自動リダイレクト
+      if (token) {
+        console.log('認証済みユーザーを検出しました。ダッシュボードにリダイレクトします...');
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1000);
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   // Spotify認証URLを取得する関数
   const handleSpotifyLogin = async () => {
@@ -93,37 +114,56 @@ export default function Home() {
           </div>
         )}
         
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-          <button
-            onClick={handleSpotifyLogin}
-            className={`bg-spotify-green hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                読み込み中...
-              </span>
-            ) : (
+        {isAuthenticated ? (
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+              <p>既にログインしています。ダッシュボードに移動しています...</p>
+            </div>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="bg-spotify-green hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition-all duration-300 hover:scale-105"
+            >
               <span className="flex items-center">
                 <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path>
+                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"></path>
                 </svg>
-                Spotifyでログイン
+                ダッシュボードを開く
               </span>
-            )}
-          </button>
-          
-          <button
-            onClick={testServerConnection}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full"
-          >
-            サーバー接続テスト
-          </button>
-        </div>
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+            <button
+              onClick={handleSpotifyLogin}
+              className={`bg-spotify-green hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  読み込み中...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path>
+                  </svg>
+                  Spotifyでログイン
+                </span>
+              )}
+            </button>
+            
+            <button
+              onClick={testServerConnection}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full"
+            >
+              サーバー接続テスト
+            </button>
+          </div>
+        )}
       </div>
       
       <div className="mt-12 text-center">
