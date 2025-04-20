@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [context, setContext] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // 認証確認とユーザープロファイル取得
   useEffect(() => {
@@ -20,36 +21,60 @@ export default function Dashboard() {
       const token = localStorage.getItem('accessToken');
       
       if (!token) {
+        console.log('アクセストークンがありません。ログインページにリダイレクトします。');
         router.push('/');
         return;
       }
       
       try {
-        // ユーザープロファイル取得 - APIサービスを使用
+        // ユーザープロファイル取得を試みて認証の有効性を確認
         try {
+          console.log('ユーザープロファイルを取得して認証を確認しています...');
           const profile = await authService.getUserProfile();
+          console.log('認証確認成功:', profile);
           setUserProfile(profile);
-        } catch (error) {
-          console.error('プロファイル取得エラー:', error);
-          throw error; // 認証エラーとして処理
+          
+          // 過去の推薦を取得
+          try {
+            console.log('推薦リストを取得しています...');
+            const recommendations = await recommendationService.getRecommendations();
+            setRecommendations(Array.isArray(recommendations) ? recommendations : []);
+          } catch (error) {
+            console.error('推薦リスト取得エラー:', error);
+            // 推薦リストの取得に失敗してもログアウトはしない
+          }
+          
+          // ロード完了
+          setIsLoading(false);
+        } catch (error: any) {
+          console.error('プロファイル取得または認証エラー:', error);
+          
+          // エラーメッセージがある場合は表示する
+          if (error.response && error.response.data) {
+            setAuthError(error.response.data.detail || '認証エラーが発生しました');
+          } else {
+            setAuthError('認証エラーが発生しました');
+          }
+          
+          // トークンを削除してホームにリダイレクト
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          
+          // 少し遅延を入れてからリダイレクト
+          setTimeout(() => {
+            router.push('/');
+          }, 2000);
         }
-        
-        // 過去の推薦を取得 - APIサービスを使用
-        try {
-          const recommendations = await recommendationService.getRecommendations();
-          setRecommendations(Array.isArray(recommendations) ? recommendations : []);
-        } catch (error) {
-          console.error('推薦リスト取得エラー:', error);
-          // 推薦リストの取得に失敗してもログアウトはしない
-        }
-        
       } catch (error) {
-        console.error('認証エラー:', error);
+        console.error('認証確認中の予期せぬエラー:', error);
+        setAuthError('認証処理中にエラーが発生しました');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        router.push('/');
-      } finally {
-        setIsLoading(false);
+        
+        // 少し遅延を入れてからリダイレクト
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
       }
     };
     
@@ -87,6 +112,17 @@ export default function Dashboard() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-spotify-green"></div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>{authError}</p>
+        </div>
+        <p className="mt-4 text-gray-600">ホームページにリダイレクトします...</p>
       </div>
     );
   }
