@@ -1,7 +1,10 @@
 # ShareTunes Project Development Guidelines
 
 ## Development Workflow
-- Follow UI-flow process when developing new features
+- Follow GitHub Flow process when developing new features
+- Create feature branches from main
+- Make small, frequent commits
+- Open pull requests early for discussion
 - Push changes to remote environment before merging
 - Create branches with descriptive names related to the feature/fix
 
