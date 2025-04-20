@@ -162,14 +162,23 @@ SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID', '')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET', '')
 SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'http://localhost:3000/auth/callback')
 
-# LLM API設定
-LLM_API_KEY = os.getenv('LLM_API_KEY', '')
-LLM_API_URL = os.getenv('LLM_API_URL', 'https://api.deepseek.com/v1/chat/completions')
+# 後方互換性のためのレガシーLLM API設定
+LEGACY_LLM_API_KEY = os.getenv('LLM_API_KEY', '')
+LEGACY_LLM_API_URL = os.getenv('LLM_API_URL', '')
 
-# OpenAI API設定（代替LLMプロバイダー）
+# DeepSeek API設定
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', LEGACY_LLM_API_KEY)
+DEEPSEEK_API_URL = os.getenv('DEEPSEEK_API_URL', LEGACY_LLM_API_URL or 'https://api.deepseek.com/v1/chat/completions')
+DEEPSEEK_MODEL = os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')
+
+# OpenAI API設定
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 OPENAI_API_URL = os.getenv('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions')
 OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
 
-# LLM プロバイダーの優先順位設定 ('deepseek', 'openai')
-LLM_PROVIDERS = os.getenv('LLM_PROVIDERS', 'deepseek,openai').split(',')
+# Gemini API設定
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-1.5-pro')
+
+# LLM プロバイダーの優先順位設定 ('deepseek', 'openai', 'gemini')
+LLM_PROVIDERS = os.getenv('LLM_PROVIDERS', 'deepseek,openai,gemini').split(',')

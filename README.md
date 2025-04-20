@@ -12,6 +12,7 @@ ShareTunesは、大規模言語モデル（LLM）を活用した次世代の音�
 
 - **Spotify連携**: ユーザーのプレイリスト・再生履歴を活用
 - **LLM推薦エンジン**: ユーザーの好み・状況を理解した楽曲推薦
+- **複数LLMプロバイダー対応**: DeepSeek, OpenAI, Gemini APIを切り替え可能
 - **パーソナライズされた提案**: 時間帯・気分・天気などのコンテキスト情報を活用
 - **フィードバックシステム**: ユーザーの反応を学習し、推薦精度を向上
 - **プレイリスト管理**: 推薦された曲を自分のプレイリストに追加可能
@@ -60,6 +61,29 @@ ShareTunes/
         ├── components/ # UIコンポーネント
         └── services/ # APIサービス
 ```
+
+## 開発者向け情報
+
+### 開発ワークフロー
+- GitHub Flow に従って開発を進めてください
+- 新機能は main ブランチから feature ブランチを作成して開発
+- 小さく頻繁なコミットを心がける
+- 早めにプルリクエストを作成して議論を開始
+- マージ前にリモート環境に変更をプッシュ
+- ブランチ名は機能・修正内容がわかる命名にする
+- mainへのマージ後はfeatureブランチを削除
+
+### コミットメッセージ
+- Conventional Commits 形式に従う
+- コミットメッセージは英語で記述
+- 形式: `type(scope): description`
+- 一般的なtype: feat, fix, docs, style, refactor, test, chore
+- 例: `feat(playlist): add shuffle functionality to playlist player`
+
+### コードコメント
+- コード内のコメントはすべて英語で記述
+- 複雑なロジックには説明的なコメントを追加
+- 公開関数やクラスは適切なドキュメントスタイルで記述
 
 ## セットアップ方法
 
@@ -122,6 +146,7 @@ npm run dev
 - [Spotify Web API](https://developer.spotify.com/documentation/web-api)
 - [OpenAI API](https://platform.openai.com/docs/api-reference)
 - [DeepSeek LLM](https://deepseek.com/)
+- [Gemini API](https://gemini.com/)
 - [Django REST framework](https://www.django-rest-framework.org/)
 - [Next.js](https://nextjs.org/)
 
