@@ -27,6 +27,8 @@ db.sqlite3
 db.sqlite3-journal
 media
 backend\.cache
+backend/profile_pictures/
+profile_pictures/
 
 # Next.js
 .next/
