@@ -162,9 +162,13 @@ SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID', '')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET', '')
 SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'http://localhost:3000/auth/callback')
 
+# 後方互換性のためのレガシーLLM API設定
+LEGACY_LLM_API_KEY = os.getenv('LLM_API_KEY', '')
+LEGACY_LLM_API_URL = os.getenv('LLM_API_URL', '')
+
 # DeepSeek API設定
-DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', os.getenv('LLM_API_KEY', ''))
-DEEPSEEK_API_URL = os.getenv('DEEPSEEK_API_URL', os.getenv('LLM_API_URL', 'https://api.deepseek.com/v1/chat/completions'))
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', LEGACY_LLM_API_KEY)
+DEEPSEEK_API_URL = os.getenv('DEEPSEEK_API_URL', LEGACY_LLM_API_URL or 'https://api.deepseek.com/v1/chat/completions')
 DEEPSEEK_MODEL = os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')
 
 # OpenAI API設定
