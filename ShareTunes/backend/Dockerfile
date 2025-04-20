@@ -21,4 +21,5 @@ EXPOSE 8000
 
 # コンテナ起動時に実行されるコマンド
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "sharetunes.wsgi:application", "--bind", "0.0.0.0:8000"]
+# 開発環境用のDjango開発サーバーを使用
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

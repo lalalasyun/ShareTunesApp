@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000/api';
 
 // デバッグ情報を出力
 console.log('API_URL設定:', API_URL);
-console.log('環境:', process.env.NODE_ENV);
+console.log('環境:', process.env.NEXT_PUBLIC_NODE_ENV || 'development');
 
 // Axiosインスタンスの作成
 const apiClient = axios.create({
@@ -222,13 +222,22 @@ interface ProfileData {
   first_name?: string;
   last_name?: string;
   bio?: string;
+  display_name?: string; // 表示名を追加
+  preferences?: {
+    theme?: string;
+    notification_settings?: {
+      email_notifications?: boolean;
+      push_notifications?: boolean;
+    }
+  }
 }
 
 // ユーザープロフィール関連
 export const userService = {
   getProfile: async () => {
     try {
-      const response = await apiClient.get('/users/profile/');
+      const response = await apiClient.get('/auth/profile/');
+      console.log('プロフィール取得成功:', response.data);
       return response.data;
     } catch (error) {
       console.error('プロフィール取得エラー:', error);
@@ -238,21 +247,36 @@ export const userService = {
   
   updateProfile: async (profileData: ProfileData) => {
     try {
-      const response = await apiClient.put('/users/profile/', profileData);
+      console.log('プロフィール更新リクエスト:', profileData);
+      const response = await apiClient.put('/auth/profile/', profileData);
+      console.log('プロフィール更新成功:', response.data);
       return response.data;
     } catch (error) {
       console.error('プロフィール更新エラー:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('APIエラー詳細:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL
+          }
+        });
+      }
       throw error;
     }
   },
   
   updateProfilePicture: async (formData: FormData) => {
     try {
-      const response = await apiClient.post('/users/profile/picture/', formData, {
+      console.log('プロフィール画像更新を開始します...');
+      const response = await apiClient.post('/auth/profile/picture/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
+      console.log('プロフィール画像更新成功:', response.data);
       return response.data;
     } catch (error) {
       console.error('プロフィール画像更新エラー:', error);
@@ -278,8 +302,33 @@ export const userService = {
       console.error('お気に入りジャンル更新エラー:', error);
       throw error;
     }
+  },
+  
+  // プロフィール設定を取得する新機能
+  getProfileSettings: async () => {
+    try {
+      const response = await apiClient.get('/auth/profile/settings/');
+      console.log('プロフィール設定取得成功:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('プロフィール設定取得エラー:', error);
+      throw error;
+    }
+  },
+  
+  // プロフィール設定を更新する新機能
+  updateProfileSettings: async (settings: any) => {
+    try {
+      console.log('プロフィール設定更新リクエスト:', settings);
+      const response = await apiClient.put('/auth/profile/settings/', settings);
+      console.log('プロフィール設定更新成功:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('プロフィール設定更新エラー:', error);
+      throw error;
+    }
   }
-};
+}
 
 export default {
   auth: authService,
