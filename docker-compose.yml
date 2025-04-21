@@ -6,12 +6,10 @@ services:
     volumes:
       - ./ShareTunes/backend:/app
       - static_volume:/app/staticfiles
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"  # 内部ネットワークのみにポートを公開
     env_file:
       - ./ShareTunes/backend/.env
-    environment:
-      - DATABASE_URL=sqlite:///db.sqlite3
     restart: unless-stopped
     networks:
       - sharetunes-network
@@ -24,18 +22,32 @@ services:
       - ./ShareTunes/frontend:/app
       - /app/node_modules
       - /app/.next
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"  # 内部ネットワークのみにポートを公開
     env_file:
       - ./ShareTunes/frontend/.env.local
     environment:
-      - DEBUG=True
-      - NEXT_PUBLIC_NODE_ENV=development
+      - NEXT_PUBLIC_NODE_ENV=development  # 開発環境用の環境変数を設定
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - sharetunes-network
+      
+  nginx:
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile.dev  # HTTP専用の開発環境用Dockerfileを使用
+    ports:
+      - "80:80"  # HTTPのみポート公開
+    volumes:
+      - static_volume:/static
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - sharetunes-network
+    restart: unless-stopped
 
 networks:
   sharetunes-network:

@@ -22,6 +22,5 @@ urlpatterns = [
     path('api/feedback/', include('feedbacks.urls')),
 ]
 
-# 開発環境でのメディアファイルの提供設定
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# メディアファイルの提供設定（開発環境と本番環境の両方に適用）
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,11 @@
+FROM nginx:alpine
+
+# 開発用設定ファイルをコピー
+COPY nginx.dev.conf /etc/nginx/nginx.conf
+
+# 開発環境用エントリーポイントスクリプトをコピー（証明書生成なし）
+COPY docker-entrypoint.dev.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

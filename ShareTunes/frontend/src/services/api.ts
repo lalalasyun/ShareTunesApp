@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosE
 
 // 開発環境では明示的にベースURLを設定
 // Docker環境ではサービス名を使用
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // デバッグ情報を出力
 console.log('API_URL設定:', API_URL);
