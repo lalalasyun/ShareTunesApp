@@ -75,7 +75,7 @@ export default function Home() {
 
       // 2. 直接Djangoサーバーにアクセスしてテスト
       try {
-        const response = await axios.get('http://localhost:8000/api/health/', { timeout: 3000 });
+        const response = await axios.get('http://localhost/api/health/', { timeout: 3000 });
         setTestStatus(`Djangoサーバーに直接接続できました！ステータス: ${response.status}, メッセージ: ${response.data.message}`);
         return;
       } catch (error: any) {

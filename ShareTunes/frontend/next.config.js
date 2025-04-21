@@ -9,7 +9,7 @@ const nextConfig = {
       {
         source: '/api/:path*',
         // IPv6ではなくIPv4を明示的に指定
-        destination: 'http://127.0.0.1:8000/api/:path*',
+        destination: 'http://localhost/api/:path*',
       },
     ];
   },

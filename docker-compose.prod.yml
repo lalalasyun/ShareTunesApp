@@ -1,0 +1,96 @@
+services:
+  backend:
+    build:
+      context: ./ShareTunes/backend/
+      dockerfile: Dockerfile
+    volumes:
+      - ./ShareTunes/backend:/app
+      - static_volume:/app/staticfiles
+    # 本番環境ではポートを外部に公開しない
+    expose:
+      - "8000"
+    env_file:
+      - ./ShareTunes/backend/.env
+    environment:
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/sharetunes
+      - DEBUG=False
+    restart: unless-stopped
+    networks:
+      - sharetunes-network
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./ShareTunes/frontend/
+      dockerfile: Dockerfile
+    volumes:
+      - ./ShareTunes/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    # 本番環境ではポートを外部に公開しない
+    expose:
+      - "3000"
+    env_file:
+      - ./ShareTunes/frontend/.env.local
+    environment:
+      - NEXT_PUBLIC_NODE_ENV=production
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - sharetunes-network
+      
+  nginx:
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"  # HTTPSポート
+    volumes:
+      - static_volume:/static
+      # Let's Encryptの証明書パスを修正
+      - ./nginx/certs:/etc/nginx/ssl:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - sharetunes-network
+    restart: unless-stopped
+
+  # SSL証明書の取得・更新用certbotコンテナ
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      # Let's Encryptの証明書出力先を修正
+      - ./nginx/certs:/etc/letsencrypt:rw
+      - ./nginx/certbot/www:/var/www/certbot:rw
+    # 初回実行時には自動的に証明書を取得
+    command: certonly --webroot --webroot-path=/var/www/certbot --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN_NAME} ${DOMAIN_NAME_WWW:+-d} ${DOMAIN_NAME_WWW} --force-renewal
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - sharetunes-network
+    restart: unless-stopped
+
+  # 本番環境用のデータベース（PostgreSQL）
+  db:
+    image: postgres:14
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=sharetunes
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - sharetunes-network
+    restart: unless-stopped
+
+networks:
+  sharetunes-network:
+    driver: bridge
+
+volumes:
+  static_volume:
+  postgres_data:

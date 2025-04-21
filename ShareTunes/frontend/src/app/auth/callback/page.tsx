@@ -44,7 +44,7 @@ function AuthCallbackContent() {
           console.log('認証コード受信、バックエンドにリダイレクト');
           // リダイレクトしてバックエンドで処理
           // Djangoバックエンドの処理でトークンを取得してから再度コールバックされる
-          window.location.href = `http://localhost:8000/api/auth/spotify/callback?code=${code}`;
+          window.location.href = `http://localhost/api/auth/spotify/callback?code=${code}`;
           return;
         }
         

@@ -26,10 +26,11 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.js ./next.config.js
 
+# 起動スクリプトをアプリディレクトリにコピー
+COPY docker-entrypoint.sh ./
+RUN chmod +x ./docker-entrypoint.sh
+
 EXPOSE 3000
 
-# 環境変数に基づいてCMDを切り分ける
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["docker-entrypoint.sh"]
+# エントリーポイントを相対パスで指定
+CMD ["sh", "./docker-entrypoint.sh"]
